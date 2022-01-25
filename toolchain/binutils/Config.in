@@ -2,13 +2,9 @@
 
 choice
 	prompt "Binutils Version" if TOOLCHAINOPTS
-	default BINUTILS_USE_VERSION_2_34
+	default BINUTILS_USE_VERSION_2_37
 	help
 	  Select the version of binutils you wish to use.
-
-	config BINUTILS_USE_VERSION_2_27
-		bool "Binutils 2.27"
-		select BINUTILS_VERSION_2_27
 
 	config BINUTILS_USE_VERSION_2_32
 		bool "Binutils 2.32"

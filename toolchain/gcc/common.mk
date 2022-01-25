@@ -100,7 +100,7 @@ GCC_CONFIGURE:= \
 		--disable-multilib \
 		--disable-libmpx \
 		--disable-nls \
-		--$(if $(CONFIG_GCC_LIBSSP),en,dis)able-libssp \
+		--disable-libssp \
 		$(GRAPHITE_CONFIGURE) \
 		--with-host-libstdcxx=-lstdc++ \
 		$(SOFT_FLOAT_CONFIG_OPTION) \
@@ -108,12 +108,15 @@ GCC_CONFIGURE:= \
 		$(if $(CONFIG_mips64)$(CONFIG_mips64el),--with-arch=mips64 \
 			--with-abi=$(call qstrip,$(CONFIG_MIPS64_ABI))) \
 		$(if $(CONFIG_arc),--with-cpu=$(CONFIG_CPU_TYPE)) \
+		$(if $(CONFIG_powerpc64), $(if $(CONFIG_USE_MUSL),--with-abi=elfv2)) \
 		--with-gmp=$(TOPDIR)/staging_dir/host \
 		--with-mpfr=$(TOPDIR)/staging_dir/host \
 		--with-mpc=$(TOPDIR)/staging_dir/host \
 		--disable-decimal-float \
 		--with-diagnostics-color=auto-if-env \
-		--enable-__cxa_atexit
+		--enable-__cxa_atexit \
+		--disable-libstdcxx-dual-abi \
+		--with-default-libstdcxx-abi=new
 ifneq ($(CONFIG_mips)$(CONFIG_mipsel),)
   GCC_CONFIGURE += --with-mips-plt
 endif

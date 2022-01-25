@@ -4,18 +4,15 @@
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
-# Entware specific: locales package moved to rtndev, gconv-modules package added
 
 include $(TOPDIR)/rules.mk
 PKG_NAME:=toolchain
 PKG_RELEASE:=3
 
-ifeq ($(CONFIG_USE_GLIBC),y)
-        PKG_RELEASE=11
-endif
-
 PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
 PKG_LICENSE:=GPL-3.0-with-GCC-exception
+
+PKG_FLAGS:=hold essential nonshared
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -31,13 +28,6 @@ define Package/gcc/Default
   CATEGORY:=Base system
   URL:=http://gcc.gnu.org/
   VERSION:=$(LIBGCC_VERSION)-$(PKG_RELEASE)
-endef
-
-define Package/gconv-modules
-$(call Package/gcc/Default)
-  TITLE:=Glibc gconv modules
-  VERSION:=$(LIBC_VERSION)-$(PKG_RELEASE)
-  DEPENDS:=@USE_GLIBC
 endef
 
 define Package/libgcc
@@ -93,33 +83,6 @@ define Package/libatomic/config
 	endmenu
 endef
 
-define Package/libssp
-$(call Package/gcc/Default)
-  DEPENDS+=@GCC_LIBSSP
-  TITLE:=GCC support library
-endef
-
-define Package/libssp/config
-	menu "Configuration"
-		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libssp
-
-	config LIBSSP_ROOT_DIR
-		string
-		prompt "libssp shared library base directory"
-		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libssp
-		default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
-		default "/"  if NATIVE_TOOLCHAIN
-
-	config LIBSSP_FILE_SPEC
-		string
-		prompt "libssp shared library files (use wildcards)"
-		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libssp
-		default "./lib/libssp.so.*"
-
-	endmenu
-endef
-
-
 define Package/libstdcpp
 $(call Package/gcc/Default)
   NAME:=libstdc++
@@ -143,6 +106,122 @@ define Package/libstdcpp/config
 		prompt "libstdc++ shared library files (use wildcards)"
 		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libstdcpp
 		default "./lib/libstdc++.so.*"
+
+	endmenu
+endef
+
+
+define Package/libasan
+$(call Package/gcc/Default)
+  NAME:=libasan
+  TITLE:=Runtime library for AddressSanitizer in GCC
+  DEPENDS:=@USE_GLIBC +librt +libstdcpp @!mips64 @!mips64el @!arc
+  ABI_VERSION:=5
+endef
+
+define Package/libasan/config
+	menu "Configuration"
+	depends on EXTERNAL_TOOLCHAIN && PACKAGE_libasan
+
+	config LIBASAN_ROOT_DIR
+		string
+		prompt "libasan shared library base directory"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libasan
+		default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+		default "/"  if NATIVE_TOOLCHAIN
+
+	config LIBASAN_FILE_SPEC
+		string
+		prompt "libasan shared library files (use wildcards)"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libasan
+		default "./lib/libasan.so.*"
+
+	endmenu
+endef
+
+
+define Package/libtsan
+$(call Package/gcc/Default)
+  NAME:=libtsan
+  TITLE:=Runtime library for ThreadSanitizer in GCC
+  DEPENDS:=@USE_GLIBC +librt +libstdcpp @!mips @!mipsel @!mips64 @!mips64el @!arc
+  ABI_VERSION:=0
+endef
+
+define Package/libtsan/config
+	menu "Configuration"
+	depends on EXTERNAL_TOOLCHAIN && PACKAGE_libtsan
+
+	config LIBTSAN_ROOT_DIR
+		string
+		prompt "libtsan shared library base directory"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libtsan
+		default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+		default "/"  if NATIVE_TOOLCHAIN
+
+	config LIBTSAN_FILE_SPEC
+		string
+		prompt "libtsan shared library files (use wildcards)"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libtsan
+		default "./lib/libtsan.so.*"
+
+	endmenu
+endef
+
+
+define Package/liblsan
+$(call Package/gcc/Default)
+  NAME:=liblsan
+  TITLE:=Runtime library for LeakSanitizer in GCC
+  DEPENDS:=@USE_GLIBC +librt +libstdcpp @!mips @!mipsel @!mips64 @!mips64el @!arc
+  ABI_VERSION:=0
+endef
+
+define Package/liblsan/config
+	menu "Configuration"
+	depends on EXTERNAL_TOOLCHAIN && PACKAGE_liblsan
+
+	config LIBLSAN_ROOT_DIR
+		string
+		prompt "liblsan shared library base directory"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_liblsan
+		default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+		default "/"  if NATIVE_TOOLCHAIN
+
+	config LIBLSAN_FILE_SPEC
+		string
+		prompt "liblsan shared library files (use wildcards)"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_liblsan
+		default "./lib/liblsan.so.*"
+
+	endmenu
+endef
+
+
+define Package/libubsan
+$(call Package/gcc/Default)
+  NAME:=libubsan
+  TITLE:=Runtime library for UndefinedBehaviorSanitizer in GCC
+  DEPENDS:=@USE_GLIBC +librt +libstdcpp @!mips64 @!mips64el @!arc
+  ABI_VERSION:=1
+endef
+
+define Package/libubsan/config
+	menu "Configuration"
+	depends on EXTERNAL_TOOLCHAIN && PACKAGE_libubsan
+
+	config LIBUBSAN_ROOT_DIR
+		string
+		prompt "libubsan shared library base directory"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libubsan
+		default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
+		default "/"  if NATIVE_TOOLCHAIN
+
+	config LIBUBSAN_FILE_SPEC
+		string
+		prompt "libubsan shared library files (use wildcards)"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libubsan
+		default "./lib/libubsan.so.*"
 
 	endmenu
 endef
@@ -288,29 +367,27 @@ define Package/libgfortran/config
 	endmenu
 endef
 
-
-define Package/libgo
+define Package/libgomp
 $(call Package/gcc/Default)
-  TITLE:=Go support library
-  DEPENDS+=@INSTALL_GCCGO
+  TITLE:=OpenMP support library
 endef
 
-define Package/libgo/config
+define Package/libgomp/config
 	menu "Configuration"
-		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libgo
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libgomp
 
-	config LIBGO_ROOT_DIR
+	config LIBGOMP_ROOT_DIR
 		string
-		prompt "libgo shared library base directory"
-		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libgo
+		prompt "libgomp shared library base directory"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libgomp
 		default TOOLCHAIN_ROOT  if !NATIVE_TOOLCHAIN
 		default "/"  if NATIVE_TOOLCHAIN
 
-	config LIBGO_FILE_SPEC
+	config LIBGOMP_FILE_SPEC
 		string
-		prompt "libgo shared library files (use wildcards)"
-		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libgo
-		default "./usr/lib/libgo.so.*"
+		prompt "libgomp shared library files (use wildcards)"
+		depends on EXTERNAL_TOOLCHAIN && PACKAGE_libgomp
+		default "./lib/libgomp.so*"
 
 	endmenu
 endef
@@ -380,160 +457,76 @@ endef
 LIBGCC_A=$(lastword $(wildcard $(TOOLCHAIN_DIR)/lib/gcc/*/*/libgcc_pic.a))
 LIBGCC_MAP=$(lastword $(wildcard $(TOOLCHAIN_DIR)/lib/gcc/*/*/libgcc.map))
 LIBGCC_SO=$(lastword $(wildcard $(TOOLCHAIN_DIR)/lib/libgcc_s.so.*))
-ifeq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
-  ifneq ($(if $(CONFIG_USE_UCLIBC),$(CONFIG_GCC_VERSION_LINARO)),)
-    BUILD_LIBGCC:=$(if $(CONFIG_m68k)$(CONFIG_powerpc),,$(PKG_BUILD_DIR)/libgcc_s.so.*)
-  endif
-endif
 
-ifneq ($(BUILD_LIBGCC),)
-  define Build/Compile/uClibc
-	$(SCRIPT_DIR)/relink-lib.sh \
-		"$(TARGET_CROSS)" \
-		"$(wildcard $(TOOLCHAIN_DIR)/lib/libc_so.a)" \
-		"$(wildcard $(TOOLCHAIN_DIR)/lib/libc_so.a)" \
-		"$(patsubst $(TOOLCHAIN_DIR)/lib/%,$(PKG_BUILD_DIR)/%,$(wildcard $(TOOLCHAIN_DIR)/lib/libuClibc-*.so))" \
-		-Wl,-init,__uClibc_init -Wl,-soname=libc.so.0 \
-		$(BUILD_LIBGCC)
-	$(SCRIPT_DIR)/relink-lib.sh \
-		"$(TARGET_CROSS)" \
-		"$(wildcard $(TOOLCHAIN_DIR)/lib/libcrypt-*.so)" \
-		"$(wildcard $(TOOLCHAIN_DIR)/lib/libcrypt_pic.a)" \
-		"$(patsubst $(TOOLCHAIN_DIR)/lib/%,$(PKG_BUILD_DIR)/%,$(wildcard $(TOOLCHAIN_DIR)/lib/libcrypt-*.so))" \
-		$(BUILD_LIBGCC) \
-		-Wl,-soname=libcrypt.so.0
-	$(SCRIPT_DIR)/relink-lib.sh \
-		"$(TARGET_CROSS)" \
-		"$(wildcard $(TOOLCHAIN_DIR)/lib/libatomic.so)" \
-		"$(wildcard $(TOOLCHAIN_DIR)/lib/libatomic.a)" \
-		"$(patsubst $(TOOLCHAIN_DIR)/lib/%,$(PKG_BUILD_DIR)/%,$(wildcard $(TOOLCHAIN_DIR)/lib/libatomic*.so))" \
-		$(BUILD_LIBGCC) \
-		-Wl,-soname=libatomic.so.0
-	$(SCRIPT_DIR)/relink-lib.sh \
-		"$(TARGET_CROSS)" \
-		"$(wildcard $(TOOLCHAIN_DIR)/lib/libm-*.so)" \
-		"$(wildcard $(TOOLCHAIN_DIR)/lib/libm_pic.a)" \
-		"$(patsubst $(TOOLCHAIN_DIR)/lib/%,$(PKG_BUILD_DIR)/%,$(wildcard $(TOOLCHAIN_DIR)/lib/libm-*.so))" \
-		$(BUILD_LIBGCC) \
-		-Wl,-soname=libm.so.0
-	$(SCRIPT_DIR)/relink-lib.sh \
-		"$(TARGET_CROSS)" \
-		"$(wildcard $(TOOLCHAIN_DIR)/lib/libpthread-*.so)" \
-		"$(wildcard $(TOOLCHAIN_DIR)/lib/libpthread_so.a)" \
-		"$(patsubst $(TOOLCHAIN_DIR)/lib/%,$(PKG_BUILD_DIR)/%,$(wildcard $(TOOLCHAIN_DIR)/lib/libpthread-*.so))" \
-		-Wl,-z,nodelete,-z,initfirst,-init=__pthread_initialize_minimal_internal \
-		-ldl -lc $(BUILD_LIBGCC) \
-		-Wl,-soname=libpthread.so.0
-  endef
-  define Build/Compile/libgcc
-	$(SCRIPT_DIR)/relink-lib.sh \
-		"$(TARGET_CROSS)" \
-		"$(LIBGCC_SO)" \
-		"$(LIBGCC_A)" \
-		"$(patsubst $(TOOLCHAIN_DIR)/lib/%,$(PKG_BUILD_DIR)/%,$(LIBGCC_SO))" \
-		-Wl,--version-script=$(LIBGCC_MAP) -Wl,-soname=libgcc_s.so.1
-  endef
-else
-  define Build/Compile/uClibc
-	$(CP) \
-		$(TOOLCHAIN_DIR)/lib/libuClibc-*.so \
-		$(TOOLCHAIN_DIR)/lib/libcrypt-*.so \
-		$(TOOLCHAIN_DIR)/lib/libm-*.so \
-		$(TOOLCHAIN_DIR)/lib/libpthread-*.so \
-		$(PKG_BUILD_DIR)/
-  endef
-  ifneq ($(LIBGCC_SO),)
+ifneq ($(LIBGCC_SO),)
     define Build/Compile/libgcc
 	$(CP) $(LIBGCC_SO) $(PKG_BUILD_DIR)/
     endef
-  endif
 endif
 
 define Build/Compile/Default
 	$(call Build/Compile/libgcc)
 	$(call Build/Compile/$(LIBC))
 endef
-
 Build/Compile = $(Build/Compile/Default)
 
 ifeq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
 
   define Package/libgcc/install
-	$(INSTALL_DIR) $(1)/opt/lib
-	$(CP) $(TOOLCHAIN_DIR)/lib/libgcc_s.so.* $(1)/opt/lib/
+	$(INSTALL_DIR) $(1)/lib
+	$(CP) $(TOOLCHAIN_DIR)/lib/libgcc_s.so.* $(1)/lib/
   endef
 
   define Package/libatomic/install
-	$(INSTALL_DIR) $(1)/opt/lib
-	$(CP) $(TOOLCHAIN_DIR)/lib/libatomic.so.* $(1)/opt/lib/
+	$(INSTALL_DIR) $(1)/lib
+	$(CP) $(TOOLCHAIN_DIR)/lib/libatomic.so.* $(1)/lib/
   endef
 
   define Package/libgfortran/install
-	$(INSTALL_DIR) $(1)/opt/lib
-	$(CP) $(TOOLCHAIN_DIR)/lib/libgfortran.so.* $(1)/opt/lib/
-  endef
-
-  define Package/libgo/install
-	$(INSTALL_DIR) $(1)/opt/lib
-	$(CP) $(TOOLCHAIN_DIR)/lib/libgo.so.* $(1)/opt/lib/
-  endef
-
-  define Package/libssp/install
-	$(INSTALL_DIR) $(1)/opt/lib
-	$(CP) $(TOOLCHAIN_DIR)/lib/libssp.so.* $(1)/opt/lib/
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(TOOLCHAIN_DIR)/lib/libgfortran.so.* $(1)/usr/lib/
   endef
 
   define Package/libstdcpp/install
-	$(INSTALL_DIR) $(1)/opt/lib
-	$(CP) $(TOOLCHAIN_DIR)/lib/libstdc++.so.* $(1)/opt/lib/
-	rm -f $(1)/opt/lib/*.py
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(TOOLCHAIN_DIR)/lib/libstdc++.so.* $(1)/usr/lib/
+  endef
+
+  define Package/libasan/install
+	$(INSTALL_DIR) $(1)/lib
+	$(CP) $(TOOLCHAIN_DIR)/lib/libasan.so.* $(1)/lib/
+  endef
+
+  define Package/libtsan/install
+	$(INSTALL_DIR) $(1)/lib
+	$(CP) $(TOOLCHAIN_DIR)/lib/libtsan.so.* $(1)/lib/
+  endef
+
+  define Package/liblsan/install
+	$(INSTALL_DIR) $(1)/lib
+	$(CP) $(TOOLCHAIN_DIR)/lib/liblsan.so.* $(1)/lib/
+  endef
+
+  define Package/libubsan/install
+	$(INSTALL_DIR) $(1)/lib
+	$(CP) $(TOOLCHAIN_DIR)/lib/libubsan.so.* $(1)/lib/
   endef
 
   define Package/glibc/install
-	$(INSTALL_DIR) $(1)/opt/etc
-	$(CP) ./glibc-files/etc/* $(1)/opt/etc
-	$(INSTALL_DIR) $(1)/opt/lib
+	$(CP) ./glibc-files/* $(1)/
+	rm -f $(1)/etc/localtime
+	$(LN) /tmp/localtime $(1)/etc/localtime
+	$(INSTALL_DIR) $(1)/lib
 	$(CP) \
 		$(TOOLCHAIN_DIR)/lib/ld*.so.* \
-		$(TOOLCHAIN_DIR)/lib/ld-$(LIBC_SO_VERSION).so \
-		$(TOOLCHAIN_DIR)/lib/libmemusage.so \
-		$(TOOLCHAIN_DIR)/lib/libpcprofile.so \
-		$(1)/opt/lib/
+		$(1)/lib/
 	for file in libanl libc libcidn libcrypt libdl libm libnsl libnss_dns libnss_files libresolv libutil; do \
-		for file in $(TOOLCHAIN_DIR)/lib/$$$$file.so.* $(TOOLCHAIN_DIR)/lib/$$$$file-$(LIBC_SO_VERSION).so; do \
+		for file in $(TOOLCHAIN_DIR)/lib/$$$$file.so.*; do \
 			if [ -e "$$$$file" ]; then \
-				$(CP) $$$$file $(1)/opt/lib/; \
+				$(CP) $$$$file $(1)/lib/; \
 			fi; \
 		done; \
 	done
-ifneq ($(CONFIG_TARGET_x86_64),)
-	$(CP) $(TOOLCHAIN_DIR)/lib/libmvec-$(LIBC_SO_VERSION).so $(1)/opt/lib
-	$(CP) $(TOOLCHAIN_DIR)/lib/libmvec.so.* $(1)/opt/lib
-endif
-  endef
-
-  define Package/uClibc/install
-	$(INSTALL_DIR) $(1)/opt/lib
-	$(CP) \
-		$(TOOLCHAIN_DIR)/lib/ld*-uClibc.so.* \
-		$(TOOLCHAIN_DIR)/lib/ld*-uClibc-$(LIBC_SO_VERSION).so \
-		$(1)/opt/lib/
-	$(CP) \
-		$(TOOLCHAIN_DIR)/lib/libc.so.* \
-		$(TOOLCHAIN_DIR)/lib/libuClibc-$(LIBC_SO_VERSION).so \
-		$(1)/opt/lib/
-	for file in libuargp libcrypt libdl libm libutil libnsl libresolv; do \
-		$(CP) \
-			$(TOOLCHAIN_DIR)/lib/$$$$file.so* \
-			$(TOOLCHAIN_DIR)/lib/$$$$file-$(LIBC_SO_VERSION).so \
-			$(1)/opt/lib/; \
-	done
-
-	$(CP) \
-		$(PKG_BUILD_DIR)/libuClibc-* \
-		$(PKG_BUILD_DIR)/libm-* \
-		$(PKG_BUILD_DIR)/libcrypt-* \
-		$(1)/opt/lib/
   endef
 
   LD_MUSL_NAME = $(notdir $(firstword $(wildcard $(TOOLCHAIN_DIR)/lib/libc.so*)))
@@ -554,157 +547,154 @@ endif
   endef
 
   define Package/libc/install_lib
-	$(CP) $(filter-out %/libdl_pic.a %/libpthread_pic.a %/libresolv_pic.a,$(wildcard $(TOOLCHAIN_DIR)/lib/lib*.a)) $(1)/opt/lib/
-	$(if $(wildcard $(TOOLCHAIN_DIR)/lib/libc_so.a),$(CP) $(TOOLCHAIN_DIR)/lib/libc_so.a $(1)/opt/lib/libc_pic.a)
+	$(CP) $(filter-out %/libdl_pic.a %/libpthread_pic.a %/libresolv_pic.a,$(wildcard $(TOOLCHAIN_DIR)/lib/lib*.a)) $(1)/lib/
+	$(if $(wildcard $(TOOLCHAIN_DIR)/lib/libc_so.a),$(CP) $(TOOLCHAIN_DIR)/lib/libc_so.a $(1)/lib/libc_pic.a)
 	$(if $(LIBGCC_MAP), \
-		$(CP) $(LIBGCC_A) $(1)/opt/lib/libgcc_s_pic.a; \
-		$(CP) $(LIBGCC_MAP) $(1)/opt/lib/libgcc_s_pic.map \
+		$(CP) $(LIBGCC_A) $(1)/lib/libgcc_s_pic.a; \
+		$(CP) $(LIBGCC_MAP) $(1)/lib/libgcc_s_pic.map \
 	)
   endef
 
   define Package/libpthread/install
-	$(INSTALL_DIR) $(1)/opt/lib
+	$(INSTALL_DIR) $(1)/lib
   ifneq ($(CONFIG_USE_MUSL),y)
 	$(CP) \
 		$(TOOLCHAIN_DIR)/lib/libpthread.so.* \
-		$(if $(BUILD_LIBGCC),\
-			$(PKG_BUILD_DIR)/libpthread-$(LIBC_SO_VERSION).so, \
-			$(TOOLCHAIN_DIR)/lib/libpthread-$(LIBC_SO_VERSION).so \
-		) \
-		$(1)/opt/lib/
+		$(1)/lib/
   endif
   endef
 
   define Package/libthread-db/install
-	$(INSTALL_DIR) $(1)/opt/lib
+	$(INSTALL_DIR) $(1)/lib
 	$(CP) \
-		$(TOOLCHAIN_DIR)/lib/libthread_db.so.* $(1)/opt/lib
-	$(CP) \
-		$(TOOLCHAIN_DIR)/lib/libthread_db-*.so  $(1)/opt/lib/
+		$(TOOLCHAIN_DIR)/lib/libthread_db.so.* $(1)/lib
   endef
 
   define Package/libpthread/install_lib
-	$(if $(wildcard $(TOOLCHAIN_DIR)/lib/libpthread_so.a),$(CP) $(TOOLCHAIN_DIR)/lib/libpthread_so.a $(1)/opt/lib/libpthread_pic.a)
+	$(if $(wildcard $(TOOLCHAIN_DIR)/lib/libpthread_so.a),$(CP) $(TOOLCHAIN_DIR)/lib/libpthread_so.a $(1)/lib/libpthread_pic.a)
   endef
 
   define Package/librt/install
-	$(INSTALL_DIR) $(1)/opt/lib
+	$(INSTALL_DIR) $(1)/lib
   ifneq ($(CONFIG_USE_MUSL),y)
 	$(CP) \
 		$(TOOLCHAIN_DIR)/lib/librt.so.* \
-		$(TOOLCHAIN_DIR)/lib/librt-$(LIBC_SO_VERSION).so \
-		$(1)/opt/lib/
+		$(1)/lib/
   endif
   endef
 
   define Package/ldd/install
-	$(INSTALL_DIR) $(1)/opt/bin/
-	$(CP) $(TOOLCHAIN_DIR)/bin/ldd $(1)/opt/bin/
-  ifeq ($(CONFIG_USE_GLIBC),y)
-	$(SED) 's|^\#!.*bash|\#!/opt/bin/sh|g; \
-	s|/lib/ld.so.1|/opt/lib/ld.so.1|g; \
-	s|/lib/ld-linux.so.3|/opt/lib/ld-linux.so.3|g; \
-	s|/lib/ld-linux.so.2|/opt/lib/ld-linux.so.2|g; \
-	s|/lib/ld-linux-aarch64.so.1|/opt/lib/ld-linux-aarch64.so.1|g; \
-	s|/lib64/ld-linux-x86-64.so.2|/opt/lib/ld-linux-x86-64.so.2|g' $(1)/opt/bin/ldd
-  endif
+	$(INSTALL_DIR) $(1)/usr/bin/
+	$(CP) $(TOOLCHAIN_DIR)/bin/ldd $(1)/usr/bin/
+	sed -i 's,^#!.*,#!/bin/sh,' $(1)/usr/bin/ldd
   endef
 
   define Package/ldconfig/install
-	$(INSTALL_DIR) $(1)/opt/sbin/
-	$(CP) $(TOOLCHAIN_DIR)/sbin/ldconfig $(1)/opt/sbin/
-  endef
-
-  define Package/gconv-modules/install
-	$(INSTALL_DIR) $(1)/opt/lib/gconv
-	$(CP) $(TOOLCHAIN_DIR)/lib/gconv/* $(1)/opt/lib/gconv/
+	$(INSTALL_DIR) $(1)/sbin/
+	$(CP) $(TOOLCHAIN_DIR)/sbin/ldconfig $(1)/sbin/
   endef
 
 else
 
   define Package/libgcc/install
 	for file in $(call qstrip,$(CONFIG_LIBGCC_FILE_SPEC)); do \
-		dir=`dirname $$$$file` ; \
-		$(INSTALL_DIR) $(1)/opt/$$$$dir ; \
-		$(CP) $(call qstrip,$(CONFIG_LIBGCC_ROOT_DIR))/$$$$file $(1)/opt/$$$$dir/ ; \
+		$(INSTALL_DIR) $(1)/lib ; \
+		$(CP) $(call qstrip,$(CONFIG_LIBGCC_ROOT_DIR))/$$$$file $(1)/lib/ ; \
 	done ; \
 	exit 0
   endef
 
   define Package/libgfortran/install
 	for file in $(call qstrip,$(CONFIG_LIBGFORTRAN_FILE_SPEC)); do \
-		dir=`dirname $$$$file` ; \
-		$(INSTALL_DIR) $(1)/opt/$$$$dir ; \
-		$(CP) $(call qstrip,$(CONFIG_LIBGFORTRAN_ROOT_DIR))/$$$$file $(1)/opt/$$$$dir/ ; \
+		$(INSTALL_DIR) $(1)/lib ; \
+		$(CP) $(call qstrip,$(CONFIG_LIBGFORTRAN_ROOT_DIR))/$$$$file $(1)/lib/ ; \
 	done
-  endef
-
-  define Package/libgo/install
-	for file in $(call qstrip,$(CONFIG_LIBGO_FILE_SPEC)); do \
-		dir=`dirname $$$$file` ; \
-		$(INSTALL_DIR) $(1)/opt/$$$$dir ; \
-		$(CP) $(call qstrip,$(CONFIG_LIBGO_ROOT_DIR))/$$$$file $(1)/opt/$$$$dir/ ; \
-	done
-  endef
-
-  define Package/libssp/install
-	for file in $(call qstrip,$(CONFIG_LIBSSP_FILE_SPEC)); do \
-		dir=`dirname $$$$file` ; \
-		$(INSTALL_DIR) $(1)/opt/$$$$dir ; \
-		$(CP) $(call qstrip,$(CONFIG_LIBSSP_ROOT_DIR))/$$$$file $(1)/opt/$$$$dir/ ; \
-	done ; \
-	exit 0
   endef
 
   define Package/libstdcpp/install
 	for file in $(call qstrip,$(CONFIG_LIBSTDCPP_FILE_SPEC)); do \
-		dir=`dirname $$$$file` ; \
-		$(INSTALL_DIR) $(1)/opt/$$$$dir ; \
-		$(CP) $(call qstrip,$(CONFIG_LIBSTDCPP_ROOT_DIR))/$$$$file $(1)/opt/$$$$dir/ ; \
+		$(INSTALL_DIR) $(1)/lib ; \
+		$(CP) $(call qstrip,$(CONFIG_LIBSTDCPP_ROOT_DIR))/$$$$file $(1)/lib/ ; \
 	done ; \
-	rm -f $(1)/opt/$$$$dir/*.py ; \
+	exit 0
+  endef
+
+  define Package/libasan/install
+	for file in $(call qstrip,$(CONFIG_LIBASAN_FILE_SPEC)); do \
+		$(INSTALL_DIR) $(1)/lib ; \
+		$(CP) $(call qstrip,$(CONFIG_LIBASAN_ROOT_DIR))/$$$$file $(1)/lib/ ; \
+	done ; \
+	exit 0
+  endef
+
+  define Package/libtsan/install
+	for file in $(call qstrip,$(CONFIG_LIBTSAN_FILE_SPEC)); do \
+		$(INSTALL_DIR) $(1)/lib ; \
+		$(CP) $(call qstrip,$(CONFIG_LIBTSAN_ROOT_DIR))/$$$$file $(1)/lib/ ; \
+	done ; \
+	exit 0
+  endef
+
+  define Package/liblsan/install
+	for file in $(call qstrip,$(CONFIG_LIBLSAN_FILE_SPEC)); do \
+		$(INSTALL_DIR) $(1)/lib ; \
+		$(CP) $(call qstrip,$(CONFIG_LIBLSAN_ROOT_DIR))/$$$$file $(1)/lib/ ; \
+	done ; \
+	exit 0
+  endef
+
+  define Package/libubsan/install
+	for file in $(call qstrip,$(CONFIG_LIBUBSAN_FILE_SPEC)); do \
+		$(INSTALL_DIR) $(1)/lib ; \
+		$(CP) $(call qstrip,$(CONFIG_LIBUBSAN_ROOT_DIR))/$$$$file $(1)/lib/ ; \
+	done ; \
 	exit 0
   endef
 
   define Package/libc/install
 	for file in $(call qstrip,$(CONFIG_LIBC_FILE_SPEC)); do \
-		dir=`dirname $$$$file` ; \
-		$(INSTALL_DIR) $(1)/opt/$$$$dir ; \
-		$(CP) $(call qstrip,$(CONFIG_LIBC_ROOT_DIR))/$$$$file $(1)/opt/$$$$dir/ ; \
+		$(INSTALL_DIR) $(1)/lib ; \
+		$(CP) $(call qstrip,$(CONFIG_LIBC_ROOT_DIR))/$$$$file $(1)/lib/ ; \
 	done ; \
-	$(INSTALL_DIR) $(1)/opt/etc ; \
-	$(CP) ./glibc-files/etc/nsswitch.conf $(1)/opt/etc/nsswitch.conf ; \
 	exit 0
   endef
 
   define Package/libpthread/install
 	for file in $(call qstrip,$(CONFIG_LIBPTHREAD_FILE_SPEC)); do \
-		dir=`dirname $$$$file` ; \
-		$(INSTALL_DIR) $(1)/opt/$$$$dir ; \
-		$(CP) $(call qstrip,$(CONFIG_LIBPTHREAD_ROOT_DIR))/$$$$file $(1)/opt/$$$$dir/ ; \
+		$(INSTALL_DIR) $(1)/lib ; \
+		$(CP) $(call qstrip,$(CONFIG_LIBPTHREAD_ROOT_DIR))/$$$$file $(1)/lib/ ; \
 	done ; \
 	exit 0
   endef
 
   define Package/libthread-db/install
-	$(INSTALL_DIR) $(1)/opt/lib
-	$(CP) $(call qstrip,$(CONFIG_LIBPTHREAD_ROOT_DIR))/lib/libthread_db{-*.so,.so.*} $(1)/opt/lib/
+	for file in $(call qstrip,$(CONFIG_LIBTHREAD_DB_FILE_SPEC)); do \
+		$(INSTALL_DIR) $(1)/lib ; \
+		$(CP) $(call qstrip,$(CONFIG_LIBTHREAD_DB_ROOT_DIR))/$$$$file $(1)/lib/ ; \
+	done ; \
+	exit 0
   endef
 
   define Package/librt/install
 	for file in $(call qstrip,$(CONFIG_LIBRT_FILE_SPEC)); do \
-		dir=`dirname $$$$file` ; \
-		$(INSTALL_DIR) $(1)/opt/$$$$dir ; \
-		$(CP) $(call qstrip,$(CONFIG_LIBRT_ROOT_DIR))/$$$$file $(1)/opt/$$$$dir/ ; \
+		$(INSTALL_DIR) $(1)/lib ; \
+		$(CP) $(call qstrip,$(CONFIG_LIBRT_ROOT_DIR))/$$$$file $(1)/lib/ ; \
 	done ; \
 	exit 0
   endef
 
   define Package/libatomic/install
 	for file in $(call qstrip,$(CONFIG_LIBATOMIC_FILE_SPEC)); do \
-		dir=`dirname $$$$file` ; \
-		$(INSTALL_DIR) $(1)/$$$$dir ; \
-		$(CP) $(call qstrip,$(CONFIG_LIBATOMIC_ROOT_DIR))/$$$$file $(1)/$$$$dir/ ; \
+		$(INSTALL_DIR) $(1)/lib ; \
+		$(CP) $(call qstrip,$(CONFIG_LIBATOMIC_ROOT_DIR))/$$$$file $(1)/lib/ ; \
+	done ; \
+	exit 0
+  endef
+
+  define Package/libgomp/install
+	for file in $(call qstrip,$(CONFIG_LIBGOMP_FILE_SPEC)); do \
+		$(INSTALL_DIR) $(1)/lib ; \
+		$(CP) $(call qstrip,$(CONFIG_LIBGOMP_ROOT_DIR))/$$$$file $(1)/lib/ ; \
 	done ; \
 	exit 0
   endef
@@ -712,20 +702,17 @@ else
   define Package/ldd/install
 	for file in $(call qstrip,$(CONFIG_LDD_FILE_SPEC)); do \
 		dir=`dirname $$$$file` ; \
-		$(INSTALL_DIR) $(1)/opt/bin ; \
-		$(CP) $(call qstrip,$(CONFIG_LDD_ROOT_DIR))/$$$$file $(1)/opt/bin/ ; \
+		$(INSTALL_DIR) $(1)/$$$$dir ; \
+		$(CP) $(call qstrip,$(CONFIG_LDD_ROOT_DIR))/$$$$file $(1)/$$$$dir/ ; \
 	done ; \
-	$(SED) 's!/bin/bash!/bin/sh!g' $(1)/opt/bin/ldd ; \
-	$(SED) 's!/lib/ld-linux.so.3!/opt/lib/ld-linux.so.3!g' $(1)/opt/bin/ldd ; \
-	$(SED) 's!/lib/ld-linux.so.2!/opt/lib/ld-linux.so.2!g' $(1)/opt/bin/ldd ; \
 	exit 0
   endef
 
   define Package/ldconfig/install
 	for file in $(call qstrip,$(CONFIG_LDCONFIG_FILE_SPEC)); do \
 		dir=`dirname $$$$file` ; \
-		$(INSTALL_DIR) $(1)/opt/bin ; \
-		$(CP) $(call qstrip,$(CONFIG_LDCONFIG_ROOT_DIR))/$$$$file $(1)/opt/bin/ ; \
+		$(INSTALL_DIR) $(1)/$$$$dir ; \
+		$(CP) $(call qstrip,$(CONFIG_LDCONFIG_ROOT_DIR))/$$$$file $(1)/$$$$dir/ ; \
 	done ; \
 	exit 0
   endef
@@ -735,13 +722,15 @@ endif
 $(eval $(call BuildPackage,libc))
 $(eval $(call BuildPackage,libgcc))
 $(eval $(call BuildPackage,libatomic))
-$(eval $(call BuildPackage,libssp))
 $(eval $(call BuildPackage,libstdcpp))
+$(eval $(call BuildPackage,libasan))
+$(eval $(call BuildPackage,libtsan))
+$(eval $(call BuildPackage,liblsan))
+$(eval $(call BuildPackage,libubsan))
 $(eval $(call BuildPackage,libpthread))
 $(eval $(call BuildPackage,libthread-db))
 $(eval $(call BuildPackage,librt))
 $(eval $(call BuildPackage,libgfortran))
-$(eval $(call BuildPackage,libgo))
+$(eval $(call BuildPackage,libgomp))
 $(eval $(call BuildPackage,ldd))
 $(eval $(call BuildPackage,ldconfig))
-$(eval $(call BuildPackage,gconv-modules))

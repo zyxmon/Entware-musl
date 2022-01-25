@@ -23,7 +23,6 @@ endif
 
 tools-y += autoconf autoconf-archive automake bc bison cmake cpio dosfstools
 tools-y += e2fsprogs fakeroot findutils flex gengetopt
-tools-y += go-bootstrap go-src
 tools-y += libtool lzma m4 meson missing-macros
 tools-y += mklibs mtools ninja
 tools-y += patchelf pkgconf quilt sstrip xxd zip zlib zstd
@@ -43,7 +42,6 @@ $(curdir)/findutils/compile := $(curdir)/bison/compile
 $(curdir)/flex/compile := $(curdir)/libtool/compile
 $(curdir)/gengetopt/compile := $(curdir)/libtool/compile
 $(curdir)/gmp/compile := $(curdir)/libtool/compile
-$(curdir)/go-src/compile := $(curdir)/go-bootstrap/compile
 $(curdir)/isl/compile := $(curdir)/gmp/compile
 $(curdir)/libtool/compile := $(curdir)/m4/compile $(curdir)/autoconf/compile $(curdir)/automake/compile $(curdir)/missing-macros/compile
 $(curdir)/meson/compile := $(curdir)/ninja/compile
