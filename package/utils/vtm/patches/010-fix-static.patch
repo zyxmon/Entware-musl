@@ -1,0 +1,30 @@
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -14,21 +14,23 @@ if (WIN32)
+     #set (CMAKE_EXE_LINKER_FLAGS "/MANIFEST:NO")
+ 
+     set (CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /bigobj")
+-else ()
+-    set (CMAKE_CXX_FLAGS "-pthread")
+-    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
++#else ()
++    #set (CMAKE_CXX_FLAGS "-pthread")
++    #if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+         #static linkage
+         #set (CMAKE_CXX_FLAGS "-static-libstdc++ -static-libgcc -pthread -s")
+         #set (CMAKE_CXX_FLAGS "-pthread -s")
+-    endif ()
++    #endif ()
+ endif ()
+ 
+ if (DEMO)
+     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEMO")
+ endif ()
+ 
+ add_executable (vtm  "vtm.cpp")
+ 
++target_link_libraries (vtm PUBLIC "-static -lstdc++ -lgcc_eh -s")
++
+ if (NOT WIN32)
+     install (TARGETS vtm  DESTINATION bin)
+ endif ()
